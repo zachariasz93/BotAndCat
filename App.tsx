@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { GameState, GameScreen, Entity, Skill, EntityType, Position, SkillType, Item, ItemType } from './types';
+import { GameState, GameScreen, Entity, Skill, EntityType, Position, SkillType, Item, ItemType, Level, CharacterCustomization, Achievement, PowerUpType, ActiveEffect } from './types';
 import { INITIAL_STATE, LOCATIONS, LORE_POEM, BLACK_CAT, ALGORITHM_KING, BOSS_QUEST, EXPLORATION_BANTER } from './constants';
 import { Exploration } from './components/Exploration';
 import { Combat } from './components/Combat';
 import { SkillTree } from './components/SkillTree';
 import { Shop } from './components/Shop';
 import { GameLayout } from './components/GameLayout';
+import { LevelSelect } from './components/LevelSelect';
+import { Achievements } from './components/Achievements';
+import { Customization } from './components/Customization';
 import { generateDialogue } from './services/geminiService';
+import { audioService, SFX, MUSIC } from './services/audioService';
 import { X, MessageSquare, Heart, Hand } from 'lucide-react';
 
 export default function App() {
@@ -408,6 +412,131 @@ export default function App() {
       });
   };
 
+  // --- New Feature Handlers ---
+
+  const handleSelectLevel = (level: Level) => {
+    audioService.playSFX(SFX.MENU_SELECT);
+    if (level.music) {
+      audioService.playMusic(level.music);
+    }
+    
+    setGameState(prev => ({
+      ...prev,
+      currentLevel: level,
+      screen: GameScreen.EXPLORATION,
+      levelStartTime: Date.now()
+    }));
+  };
+
+  const handleCompleteLevel = (levelId: string) => {
+    audioService.playSFX(SFX.LEVEL_COMPLETE);
+    
+    setGameState(prev => {
+      const levels = prev.levels || [];
+      const currentLevelIndex = levels.findIndex(l => l.id === levelId);
+      
+      // Mark level as completed
+      const updatedLevels = levels.map((level, idx) => {
+        if (level.id === levelId) {
+          return { ...level, completed: true };
+        }
+        // Unlock next level
+        if (idx === currentLevelIndex + 1) {
+          return { ...level, unlocked: true };
+        }
+        return level;
+      });
+
+      // Update achievements
+      const achievements = [...prev.achievements];
+      const firstLevelAch = achievements.find(a => a.id === 'first_level');
+      const allLevelsAch = achievements.find(a => a.id === 'all_levels');
+      
+      const completedCount = updatedLevels.filter(l => l.completed).length;
+      
+      if (firstLevelAch && !firstLevelAch.unlocked && completedCount >= 1) {
+        firstLevelAch.unlocked = true;
+        firstLevelAch.progress = 1;
+        audioService.playSFX(SFX.ACHIEVEMENT);
+      }
+      
+      if (allLevelsAch) {
+        allLevelsAch.progress = completedCount;
+        if (completedCount >= allLevelsAch.target && !allLevelsAch.unlocked) {
+          allLevelsAch.unlocked = true;
+          audioService.playSFX(SFX.ACHIEVEMENT);
+        }
+      }
+
+      return {
+        ...prev,
+        levels: updatedLevels,
+        achievements,
+        subscribers: prev.subscribers + 500
+      };
+    });
+  };
+
+  const handleCollectPowerUp = (powerUpType: PowerUpType, duration: number, value: number) => {
+    audioService.playSFX(SFX.POWERUP);
+    
+    const endTime = Date.now() + (duration * 1000);
+    const newEffect: ActiveEffect = {
+      type: powerUpType,
+      endTime,
+      value
+    };
+
+    setGameState(prev => {
+      // Mark the power-up as collected in the current level
+      const updatedLevel = prev.currentLevel ? {
+        ...prev.currentLevel,
+        powerUps: prev.currentLevel.powerUps.map(p => 
+          p.type === powerUpType && !p.collected ? { ...p, collected: true } : p
+        )
+      } : prev.currentLevel;
+
+      // Update achievement
+      const achievements = [...prev.achievements];
+      const collectorAch = achievements.find(a => a.id === 'collector');
+      if (collectorAch && !collectorAch.unlocked) {
+        collectorAch.progress += 1;
+        if (collectorAch.progress >= collectorAch.target) {
+          collectorAch.unlocked = true;
+          audioService.playSFX(SFX.ACHIEVEMENT);
+        }
+      }
+
+      return {
+        ...prev,
+        activeEffects: [...prev.activeEffects, newEffect],
+        currentLevel: updatedLevel,
+        achievements
+      };
+    });
+  };
+
+  const handleSaveCustomization = (customizations: CharacterCustomization[]) => {
+    audioService.playSFX(SFX.BUTTON_CLICK);
+    setGameState(prev => ({
+      ...prev,
+      customizations
+    }));
+  };
+
+  // Clean up expired power-up effects
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setGameState(prev => ({
+        ...prev,
+        activeEffects: prev.activeEffects.filter(effect => effect.endTime > now)
+      }));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // --- Views ---
 
   const renderContent = () => {
@@ -420,11 +549,25 @@ export default function App() {
                         {LORE_POEM}
                     </div>
                     <button 
-                        onClick={() => setGameState(prev => ({ ...prev, screen: GameScreen.EXPLORATION }))}
-                        className="px-8 py-4 bg-neon-blue text-black font-bold text-xl hover:scale-105 transition transform shadow-[0_0_20px_rgba(0,255,255,0.6)]"
+                        onClick={() => setGameState(prev => ({ ...prev, screen: GameScreen.LEVEL_SELECT }))}
+                        className="px-8 py-4 bg-neon-blue text-black font-bold text-xl hover:scale-105 transition transform shadow-[0_0_20px_rgba(0,255,255,0.6)] mb-4"
                     >
                         INITIATE SEQUENCE
                     </button>
+                    <div className="flex gap-4">
+                        <button 
+                            onClick={() => setGameState(prev => ({ ...prev, screen: GameScreen.ACHIEVEMENTS }))}
+                            className="px-8 py-4 bg-neon-pink text-black font-bold text-xl hover:scale-105 transition transform shadow-[0_0_20px_rgba(255,0,255,0.6)]"
+                        >
+                            ACHIEVEMENTS
+                        </button>
+                        <button 
+                            onClick={() => setGameState(prev => ({ ...prev, screen: GameScreen.CUSTOMIZATION }))}
+                            className="px-8 py-4 bg-purple-600 text-white font-bold text-xl hover:scale-105 transition transform shadow-[0_0_20px_rgba(128,0,255,0.6)]"
+                        >
+                            CUSTOMIZE
+                        </button>
+                    </div>
                 </div>
             );
         
@@ -441,6 +584,19 @@ export default function App() {
                     onOpenSkills={() => setGameState(prev => ({...prev, screen: GameScreen.SKILL_TREE}))}
                     onUpdatePosition={handleUpdatePosition}
                     onUseItem={handleUseItem}
+                    onCollectPowerUp={handleCollectPowerUp}
+                    onObstacleHit={(damage) => {
+                        setGameState(prev => {
+                            const newParty = [...prev.party];
+                            newParty[0].currentHp = Math.max(0, newParty[0].currentHp - damage);
+                            return {
+                                ...prev,
+                                party: newParty,
+                                player: newParty[0],
+                                log: [`Hit obstacle! -${damage} HP`, ...prev.log]
+                            };
+                        });
+                    }}
                 />
             );
 
@@ -503,6 +659,32 @@ export default function App() {
                         NEW GAME PLUS
                     </button>
                 </div>
+            );
+        
+        case GameScreen.LEVEL_SELECT:
+            return (
+                <LevelSelect 
+                    gameState={gameState}
+                    onSelectLevel={handleSelectLevel}
+                    onBack={() => setGameState(prev => ({ ...prev, screen: GameScreen.INTRO }))}
+                />
+            );
+        
+        case GameScreen.ACHIEVEMENTS:
+            return (
+                <Achievements 
+                    gameState={gameState}
+                    onClose={() => setGameState(prev => ({ ...prev, screen: GameScreen.INTRO }))}
+                />
+            );
+        
+        case GameScreen.CUSTOMIZATION:
+            return (
+                <Customization 
+                    gameState={gameState}
+                    onSaveCustomization={handleSaveCustomization}
+                    onClose={() => setGameState(prev => ({ ...prev, screen: GameScreen.EXPLORATION }))}
+                />
             );
 
         default:
