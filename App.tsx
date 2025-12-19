@@ -545,12 +545,20 @@ export default function App() {
                     >
                         INITIATE SEQUENCE
                     </button>
-                    <button 
-                        onClick={() => setGameState(prev => ({ ...prev, screen: GameScreen.ACHIEVEMENTS }))}
-                        className="px-8 py-4 bg-neon-pink text-black font-bold text-xl hover:scale-105 transition transform shadow-[0_0_20px_rgba(255,0,255,0.6)]"
-                    >
-                        ACHIEVEMENTS
-                    </button>
+                    <div className="flex gap-4">
+                        <button 
+                            onClick={() => setGameState(prev => ({ ...prev, screen: GameScreen.ACHIEVEMENTS }))}
+                            className="px-8 py-4 bg-neon-pink text-black font-bold text-xl hover:scale-105 transition transform shadow-[0_0_20px_rgba(255,0,255,0.6)]"
+                        >
+                            ACHIEVEMENTS
+                        </button>
+                        <button 
+                            onClick={() => setGameState(prev => ({ ...prev, screen: GameScreen.CUSTOMIZATION }))}
+                            className="px-8 py-4 bg-purple-600 text-white font-bold text-xl hover:scale-105 transition transform shadow-[0_0_20px_rgba(128,0,255,0.6)]"
+                        >
+                            CUSTOMIZE
+                        </button>
+                    </div>
                 </div>
             );
         
