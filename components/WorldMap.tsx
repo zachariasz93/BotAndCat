@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { GameState, Position, Location } from '../types';
+import { GameState, Position, Location, Obstacle, PowerUp, ObstacleType, PowerUpType } from '../types';
 import { LOCATIONS, MAP_WIDTH, MAP_HEIGHT } from '../constants';
-import { MapPin, MessageCircle, Skull, ShoppingBag, Bed, Zap } from 'lucide-react';
+import { MapPin, MessageCircle, Skull, ShoppingBag, Bed, Zap, Shield, Wind, TrendingUp } from 'lucide-react';
+import { ParallaxBackground } from './ParallaxBackground';
 
 interface Props {
   gameState: GameState;
@@ -9,6 +10,8 @@ interface Props {
   onInteract: (type: 'NPC' | 'SHOP' | 'INN' | 'BOSS', id: string) => void;
   onFight: (enemyId: string, type: string) => void;
   onOpenSkills: () => void;
+  onCollectPowerUp?: (powerUpType: PowerUpType, duration: number, value: number) => void;
+  onObstacleHit?: (damage: number) => void;
 }
 
 const PLAYER_SPEED = 5;
@@ -16,7 +19,7 @@ const INTERACTION_RADIUS = 80;
 const COMBAT_RADIUS = 40;
 
 export const WorldMap: React.FC<Props> = ({ 
-  gameState, onUpdatePosition, onInteract, onFight, onOpenSkills
+  gameState, onUpdatePosition, onInteract, onFight, onOpenSkills, onCollectPowerUp, onObstacleHit
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef<number>();
@@ -140,7 +143,38 @@ export const WorldMap: React.FC<Props> = ({
   const checkCollisions = (px: number, py: number) => {
       let foundLabel = null;
 
-      // 1. Check Enemies
+      // 1. Check Power-ups
+      if (gameState.currentLevel && onCollectPowerUp) {
+        for (const powerUp of gameState.currentLevel.powerUps) {
+          if (!powerUp.collected) {
+            const dist = Math.hypot(powerUp.x - px, powerUp.y - py);
+            if (dist < 30) {
+              onCollectPowerUp(powerUp.type, powerUp.duration, powerUp.effectValue);
+              powerUp.collected = true;
+            }
+          }
+        }
+      }
+
+      // 2. Check Obstacles
+      if (gameState.currentLevel && onObstacleHit) {
+        for (const obstacle of gameState.currentLevel.obstacles) {
+          // Simple AABB collision detection
+          const playerSize = 20; // Player hitbox size
+          const inX = px + playerSize > obstacle.x && px - playerSize < obstacle.x + obstacle.width;
+          const inY = py + playerSize > obstacle.y && py - playerSize < obstacle.y + obstacle.height;
+          
+          if (inX && inY && obstacle.damage) {
+            // Check if player is invincible
+            const hasInvincibility = gameState.activeEffects.some(e => e.type === PowerUpType.INVINCIBILITY);
+            if (!hasInvincibility) {
+              onObstacleHit(obstacle.damage);
+            }
+          }
+        }
+      }
+
+      // 3. Check Enemies
       for (const enemy of gameState.mapEnemies) {
           const dist = Math.hypot(enemy.x - px, enemy.y - py);
           if (dist < COMBAT_RADIUS) {
@@ -150,7 +184,7 @@ export const WorldMap: React.FC<Props> = ({
           }
       }
 
-      // 2. Check Locations/NPCs
+      // 4. Check Locations/NPCs
       for (const key in LOCATIONS) {
           const loc = LOCATIONS[key];
           const dist = Math.hypot(loc.x - px, loc.y - py);
@@ -187,6 +221,18 @@ export const WorldMap: React.FC<Props> = ({
   return (
     <div ref={containerRef} className="w-full h-full overflow-hidden relative bg-black cursor-crosshair">
       
+      {/* Parallax Background (if in a level) */}
+      {gameState.currentLevel && (
+        <div className="absolute inset-0 pointer-events-none">
+          <ParallaxBackground 
+            theme={gameState.currentLevel.theme}
+            layers={gameState.currentLevel.backgroundLayers}
+            scrollX={camera.x}
+            scrollY={camera.y}
+          />
+        </div>
+      )}
+      
       {/* World Container */}
       <div 
         className="absolute transition-transform duration-75 ease-linear will-change-transform"
@@ -194,7 +240,7 @@ export const WorldMap: React.FC<Props> = ({
             width: `${MAP_WIDTH}px`, 
             height: `${MAP_HEIGHT}px`,
             transform: `translate3d(${-camera.x}px, ${-camera.y}px, 0)`,
-            backgroundImage: 'radial-gradient(circle, #1a1a1a 1px, transparent 1px)',
+            backgroundImage: gameState.currentLevel ? 'none' : 'radial-gradient(circle, #1a1a1a 1px, transparent 1px)',
             backgroundSize: '40px 40px'
         }}
       >
@@ -245,6 +291,82 @@ export const WorldMap: React.FC<Props> = ({
                   </div>
               </div>
           ))}
+
+          {/* Render Obstacles */}
+          {gameState.currentLevel?.obstacles.map(obstacle => {
+            let bgColor = 'bg-red-500';
+            let icon = '⚠️';
+            
+            switch(obstacle.type) {
+              case ObstacleType.SPIKE:
+              case ObstacleType.MOVING_SPIKE:
+                bgColor = 'bg-red-600';
+                icon = '▲';
+                break;
+              case ObstacleType.PITFALL:
+                bgColor = 'bg-black';
+                icon = '⬇';
+                break;
+              case ObstacleType.WALL:
+              case ObstacleType.BARRIER:
+                bgColor = 'bg-gray-700';
+                icon = '█';
+                break;
+            }
+            
+            return (
+              <div
+                key={obstacle.id}
+                className={`absolute ${bgColor} border-2 border-white/50 flex items-center justify-center text-white font-bold shadow-lg`}
+                style={{ 
+                  left: obstacle.x, 
+                  top: obstacle.y,
+                  width: obstacle.width,
+                  height: obstacle.height
+                }}
+                title={obstacle.type}
+              >
+                {icon}
+              </div>
+            );
+          })}
+
+          {/* Render Power-ups */}
+          {gameState.currentLevel?.powerUps.filter(p => !p.collected).map(powerUp => {
+            let Icon = Zap;
+            let color = 'text-yellow-400';
+            
+            switch(powerUp.type) {
+              case PowerUpType.SPEED_BOOST:
+                Icon = Wind;
+                color = 'text-cyan-400';
+                break;
+              case PowerUpType.INVINCIBILITY:
+                Icon = Shield;
+                color = 'text-purple-400';
+                break;
+              case PowerUpType.EXTRA_JUMP:
+                Icon = TrendingUp;
+                color = 'text-green-400';
+                break;
+              case PowerUpType.DAMAGE_BOOST:
+                Icon = Zap;
+                color = 'text-orange-400';
+                break;
+            }
+            
+            return (
+              <div
+                key={powerUp.id}
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 animate-bounce"
+                style={{ left: powerUp.x, top: powerUp.y }}
+              >
+                <div className={`w-10 h-10 ${color} bg-black/70 rounded-full border-2 border-current flex items-center justify-center shadow-[0_0_20px_currentColor]`}>
+                  <Icon size={20} />
+                </div>
+              </div>
+            );
+          })}
 
           {/* Render Enemies */}
           {gameState.mapEnemies.map(enemy => (

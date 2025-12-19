@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { GameState, Position, Location, Item } from '../types';
+import { GameState, Position, Location, Item, PowerUpType } from '../types';
 import { WorldMap } from './WorldMap';
 import { Inventory } from './Inventory';
-import { Heart, Briefcase } from 'lucide-react';
+import { Heart, Briefcase, Zap, Shield, Wind } from 'lucide-react';
 
 interface Props {
   gameState: GameState;
@@ -15,10 +15,12 @@ interface Props {
   onOpenSkills: () => void;
   onUpdatePosition: (pos: Position) => void;
   onUseItem: (item: Item, index: number) => void;
+  onCollectPowerUp?: (powerUpType: PowerUpType, duration: number, value: number) => void;
+  onObstacleHit?: (damage: number) => void;
 }
 
 export const Exploration: React.FC<Props> = ({ 
-  gameState, activeBanter, onMove, onInteractNPC, onFight, onEnterShop, onRest, onOpenSkills, onUpdatePosition, onUseItem
+  gameState, activeBanter, onMove, onInteractNPC, onFight, onEnterShop, onRest, onOpenSkills, onUpdatePosition, onUseItem, onCollectPowerUp, onObstacleHit
 }) => {
   const [showInventory, setShowInventory] = useState(false);
   
@@ -41,6 +43,8 @@ export const Exploration: React.FC<Props> = ({
             onInteract={handleMapInteract}
             onFight={handleMapFight}
             onOpenSkills={onOpenSkills}
+            onCollectPowerUp={onCollectPowerUp}
+            onObstacleHit={onObstacleHit}
         />
 
         {/* HUD Overlay - Party Status */}
@@ -88,7 +92,70 @@ export const Exploration: React.FC<Props> = ({
                     ))}
                 </div>
             )}
+            
+            {/* Level Objectives */}
+            {gameState.currentLevel && (
+                <div className="mt-2 bg-blue-900/80 backdrop-blur-md p-3 rounded border border-blue-700 pointer-events-auto">
+                    <p className="text-[10px] font-bold text-blue-400 mb-1">LEVEL: {gameState.currentLevel.name}</p>
+                    {gameState.currentLevel.objectives.map(obj => (
+                        <div key={obj.id} className="flex items-center gap-1 text-[9px] text-gray-300">
+                            <span className={obj.completed ? 'text-green-400' : 'text-gray-400'}>
+                                {obj.completed ? '✓' : '○'}
+                            </span>
+                            <span>{obj.description}</span>
+                            {!obj.completed && obj.type !== 'reach_point' && (
+                                <span className="text-blue-400">({obj.current}/{obj.target})</span>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
+
+        {/* Active Effects Display */}
+        {gameState.activeEffects.length > 0 && (
+            <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md p-3 rounded border border-purple-500 pointer-events-none z-10">
+                <h3 className="text-purple-400 text-xs font-bold mb-2">ACTIVE EFFECTS</h3>
+                <div className="space-y-1">
+                    {gameState.activeEffects.map((effect, idx) => {
+                        const remaining = Math.max(0, Math.ceil((effect.endTime - Date.now()) / 1000));
+                        let icon = <Zap size={12} />;
+                        let color = 'text-yellow-400';
+                        let label = 'Power-Up';
+                        
+                        switch(effect.type) {
+                            case 'SPEED_BOOST':
+                                icon = <Wind size={12} />;
+                                color = 'text-cyan-400';
+                                label = 'Speed Boost';
+                                break;
+                            case 'INVINCIBILITY':
+                                icon = <Shield size={12} />;
+                                color = 'text-purple-400';
+                                label = 'Invincible';
+                                break;
+                            case 'EXTRA_JUMP':
+                                icon = <Zap size={12} />;
+                                color = 'text-green-400';
+                                label = 'Extra Jump';
+                                break;
+                            case 'DAMAGE_BOOST':
+                                icon = <Zap size={12} />;
+                                color = 'text-orange-400';
+                                label = 'Damage Boost';
+                                break;
+                        }
+                        
+                        return (
+                            <div key={idx} className={`flex items-center gap-2 ${color}`}>
+                                {icon}
+                                <span className="text-[10px]">{label}: {remaining}s</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        )}
 
         {/* Ambient Banter Bubble */}
         {activeBanter && (

@@ -567,6 +567,19 @@ export default function App() {
                     onOpenSkills={() => setGameState(prev => ({...prev, screen: GameScreen.SKILL_TREE}))}
                     onUpdatePosition={handleUpdatePosition}
                     onUseItem={handleUseItem}
+                    onCollectPowerUp={handleCollectPowerUp}
+                    onObstacleHit={(damage) => {
+                        setGameState(prev => {
+                            const newParty = [...prev.party];
+                            newParty[0].currentHp = Math.max(0, newParty[0].currentHp - damage);
+                            return {
+                                ...prev,
+                                party: newParty,
+                                player: newParty[0],
+                                log: [`Hit obstacle! -${damage} HP`, ...prev.log]
+                            };
+                        });
+                    }}
                 />
             );
 
