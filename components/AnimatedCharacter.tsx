@@ -141,5 +141,5 @@ function getHueRotation(hexColor: string): number {
   };
   
   // Return mapped value or 0 for unknown colors
-  return colorMap[normalizedColor] ?? 0;
+  return colorMap[normalizedColor] || 0;
 }

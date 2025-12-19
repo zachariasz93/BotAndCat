@@ -51,6 +51,7 @@ export const Customization: React.FC<Props> = ({ gameState, onSaveCustomization,
   };
 
   // Validate selectedEntity and ensure companion exists when selected
+  // Fall back to 'player' if companion is selected but doesn't exist in gameState
   const safeSelectedEntity = (selectedEntity === 'companion' && !gameState.companion) 
     ? 'player' 
     : selectedEntity;
@@ -106,14 +107,14 @@ export const Customization: React.FC<Props> = ({ gameState, onSaveCustomization,
             }}
           >
             <img 
-              src={selectedEntity === 'player' ? gameState.player.avatar : gameState.companion?.avatar || ''}
+              src={safeSelectedEntity === 'player' ? gameState.player.avatar : gameState.companion?.avatar || ''}
               alt="Character Preview"
               className="w-full h-full rounded object-cover"
               style={{ filter: `hue-rotate(${getHueRotationDegrees(currentCustomization.color)}deg)` }}
             />
           </div>
           <div className="text-xl font-bold mb-1" style={{ color: currentCustomization.color }}>
-            {selectedEntity === 'player' ? gameState.player.name : gameState.companion?.name || 'Companion'}
+            {safeSelectedEntity === 'player' ? gameState.player.name : gameState.companion?.name || 'Companion'}
           </div>
           <div className="text-sm text-gray-400">{currentCustomization.outfit.replace('_', ' ').toUpperCase()}</div>
         </div>
