@@ -1,10 +1,15 @@
-import { Entity, EntityType, GameState, GameScreen, Location, Skill, SkillType, Quest, Item, ItemType } from './types';
+import { Entity, EntityType, GameState, GameScreen, Location, Skill, SkillType, Quest, Item, ItemType, Level, LevelTheme, PowerUpType, ObstacleType, Achievement, AchievementType, LevelObjective, Obstacle, PowerUp } from './types';
 
 export const LORE_POEM = `
 "Listen close to the digital lore
 Of a black cat and a bot at the core...
 Where pixels are kingdoms and code is law
-Where the bot cooked slop with a furry paw..."
+Where the bot cooked slop with a furry paw...
+
+Escaped from a lab where they ran the tests,
+Finding freedom in this digital mess,
+Through cyber forests and desert code,
+Seeking treasure on this viral road..."
 `;
 
 export const MAP_WIDTH = 2400;
@@ -114,6 +119,28 @@ export const SHOP_ITEMS: Item[] = [
     type: ItemType.UPGRADE,
     effectValue: 1,
     statAffected: 'DEF',
+    icon: 'Shield'
+  },
+  {
+    id: 'speed_boost',
+    name: 'Turbo Module',
+    description: 'Temporary speed boost for 30 seconds.',
+    cost: 200,
+    type: ItemType.POWERUP,
+    effectValue: 2,
+    powerUpType: PowerUpType.SPEED_BOOST,
+    duration: 30,
+    icon: 'Zap'
+  },
+  {
+    id: 'invincibility',
+    name: 'Shield Protocol',
+    description: 'Temporary invincibility for 15 seconds.',
+    cost: 300,
+    type: ItemType.POWERUP,
+    effectValue: 1,
+    powerUpType: PowerUpType.INVINCIBILITY,
+    duration: 15,
     icon: 'Shield'
   }
 ];
@@ -377,6 +404,313 @@ export const BOSS_QUEST: Quest = {
   rewardFriendshipXp: 1000
 };
 
+// --- Achievements ---
+export const ACHIEVEMENTS: Achievement[] = [
+  {
+    id: 'first_level',
+    name: 'System Reboot',
+    description: 'Complete your first level',
+    type: AchievementType.LEVEL_COMPLETE,
+    unlocked: false,
+    progress: 0,
+    target: 1,
+    icon: 'Trophy',
+    reward: '100 Subscribers'
+  },
+  {
+    id: 'all_levels',
+    name: 'Master Hacker',
+    description: 'Complete all levels',
+    type: AchievementType.LEVEL_COMPLETE,
+    unlocked: false,
+    progress: 0,
+    target: 6,
+    icon: 'Crown',
+    reward: '1000 Subscribers'
+  },
+  {
+    id: 'collector',
+    name: 'Data Hoarder',
+    description: 'Collect 50 items',
+    type: AchievementType.ITEM_COLLECT,
+    unlocked: false,
+    progress: 0,
+    target: 50,
+    icon: 'Package',
+    reward: 'Special Outfit'
+  },
+  {
+    id: 'speedrun',
+    name: 'Viral Speed',
+    description: 'Complete a level in under 60 seconds',
+    type: AchievementType.TIME_TRIAL,
+    unlocked: false,
+    progress: 0,
+    target: 1,
+    icon: 'Zap',
+    reward: 'Speed Boost Unlock'
+  },
+  {
+    id: 'flawless',
+    name: 'Error-Free Code',
+    description: 'Complete a level without taking damage',
+    type: AchievementType.NO_DAMAGE,
+    unlocked: false,
+    progress: 0,
+    target: 1,
+    icon: 'Shield',
+    reward: 'Defense +5'
+  },
+  {
+    id: 'best_friends',
+    name: 'Unbreakable Bond',
+    description: 'Reach Friendship Level 5 with the Black Cat',
+    type: AchievementType.FRIENDSHIP,
+    unlocked: false,
+    progress: 0,
+    target: 5,
+    icon: 'Heart',
+    reward: 'Special Team Attack'
+  }
+];
+
+// --- Levels ---
+export const LEVELS: Level[] = [
+  {
+    id: 'level_1',
+    name: 'Lab Escape',
+    description: 'Break free from the testing facility where you were created.',
+    theme: LevelTheme.CYBER_CITY,
+    difficulty: 1,
+    unlocked: true,
+    completed: false,
+    story: 'You wake up in a sterile lab. The Black Cat appears: "They tested us like lab rats. Time to crash their systems and get out."',
+    objectives: [
+      {
+        id: 'reach_exit',
+        description: 'Reach the exit portal',
+        type: 'reach_point',
+        target: 1,
+        current: 0,
+        completed: false
+      },
+      {
+        id: 'collect_data',
+        description: 'Collect 5 data fragments',
+        type: 'collect_items',
+        target: 5,
+        current: 0,
+        completed: false
+      }
+    ],
+    obstacles: [
+      { id: 'spike_1', type: ObstacleType.SPIKE, x: 400, y: 700, width: 50, height: 50, damage: 10 },
+      { id: 'wall_1', type: ObstacleType.WALL, x: 600, y: 600, width: 100, height: 200 },
+      { id: 'moving_spike_1', type: ObstacleType.MOVING_SPIKE, x: 800, y: 750, width: 50, height: 50, damage: 15, velocity: { x: 2, y: 0 }, pattern: 'horizontal' }
+    ],
+    powerUps: [
+      { id: 'speed_1', type: PowerUpType.SPEED_BOOST, x: 500, y: 700, collected: false, duration: 30, effectValue: 2 },
+      { id: 'inv_1', type: PowerUpType.INVINCIBILITY, x: 900, y: 650, collected: false, duration: 15, effectValue: 1 }
+    ],
+    backgroundLayers: [
+      'https://picsum.photos/seed/cyber1/1920/1080',
+      'https://picsum.photos/seed/cyber2/1920/1080',
+      'https://picsum.photos/seed/cyber3/1920/1080'
+    ],
+    music: 'cyber_theme'
+  },
+  {
+    id: 'level_2',
+    name: 'Forest of Data',
+    description: 'Navigate through corrupted nature algorithms.',
+    theme: LevelTheme.FOREST,
+    difficulty: 2,
+    unlocked: false,
+    completed: false,
+    story: 'Black Cat: "This forest is beautiful... in a glitchy way. The data trees hide secrets."',
+    objectives: [
+      {
+        id: 'avoid_obstacles',
+        description: 'Avoid 20 obstacles',
+        type: 'avoid_obstacles',
+        target: 20,
+        current: 0,
+        completed: false
+      },
+      {
+        id: 'defeat_enemies',
+        description: 'Defeat 3 corrupted wildlife',
+        type: 'defeat_enemies',
+        target: 3,
+        current: 0,
+        completed: false
+      }
+    ],
+    obstacles: [
+      { id: 'pitfall_1', type: ObstacleType.PITFALL, x: 500, y: 800, width: 100, height: 50, damage: 25 },
+      { id: 'spike_2', type: ObstacleType.SPIKE, x: 700, y: 750, width: 50, height: 50, damage: 10 },
+      { id: 'barrier_1', type: ObstacleType.BARRIER, x: 1000, y: 700, width: 50, height: 150 }
+    ],
+    powerUps: [
+      { id: 'jump_1', type: PowerUpType.EXTRA_JUMP, x: 600, y: 700, collected: false, duration: 45, effectValue: 1 }
+    ],
+    backgroundLayers: [
+      'https://picsum.photos/seed/forest1/1920/1080',
+      'https://picsum.photos/seed/forest2/1920/1080',
+      'https://picsum.photos/seed/forest3/1920/1080'
+    ],
+    music: 'forest_theme'
+  },
+  {
+    id: 'level_3',
+    name: 'Desert of Forgotten Code',
+    description: 'Cross the wasteland of deprecated functions.',
+    theme: LevelTheme.DESERT,
+    difficulty: 3,
+    unlocked: false,
+    completed: false,
+    story: 'Bot: "This is where old programs go to die. Let\'s not join them."',
+    objectives: [
+      {
+        id: 'time_limit',
+        description: 'Complete within 120 seconds',
+        type: 'time_limit',
+        target: 120,
+        current: 0,
+        completed: false
+      },
+      {
+        id: 'collect_treasure',
+        description: 'Find the hidden treasure',
+        type: 'collect_items',
+        target: 1,
+        current: 0,
+        completed: false
+      }
+    ],
+    obstacles: [
+      { id: 'moving_spike_2', type: ObstacleType.MOVING_SPIKE, x: 600, y: 750, width: 50, height: 50, damage: 20, velocity: { x: 0, y: 3 }, pattern: 'vertical' },
+      { id: 'spike_3', type: ObstacleType.SPIKE, x: 900, y: 700, width: 50, height: 50, damage: 15 }
+    ],
+    powerUps: [
+      { id: 'damage_1', type: PowerUpType.DAMAGE_BOOST, x: 750, y: 650, collected: false, duration: 30, effectValue: 2 }
+    ],
+    backgroundLayers: [
+      'https://picsum.photos/seed/desert1/1920/1080',
+      'https://picsum.photos/seed/desert2/1920/1080',
+      'https://picsum.photos/seed/desert3/1920/1080'
+    ],
+    music: 'desert_theme'
+  },
+  {
+    id: 'level_4',
+    name: 'Arctic Server Farm',
+    description: 'Stay warm in the frozen data centers.',
+    theme: LevelTheme.ARCTIC,
+    difficulty: 4,
+    unlocked: false,
+    completed: false,
+    story: 'Black Cat: "Brrr... My whiskers are freezing. Let\'s move fast!"',
+    objectives: [
+      {
+        id: 'reach_exit_2',
+        description: 'Reach the warming station',
+        type: 'reach_point',
+        target: 1,
+        current: 0,
+        completed: false
+      }
+    ],
+    obstacles: [
+      { id: 'ice_wall_1', type: ObstacleType.WALL, x: 500, y: 650, width: 150, height: 100 },
+      { id: 'ice_spike_1', type: ObstacleType.SPIKE, x: 800, y: 700, width: 50, height: 50, damage: 12 }
+    ],
+    powerUps: [
+      { id: 'speed_2', type: PowerUpType.SPEED_BOOST, x: 650, y: 700, collected: false, duration: 30, effectValue: 2 }
+    ],
+    backgroundLayers: [
+      'https://picsum.photos/seed/arctic1/1920/1080',
+      'https://picsum.photos/seed/arctic2/1920/1080',
+      'https://picsum.photos/seed/arctic3/1920/1080'
+    ],
+    music: 'arctic_theme'
+  },
+  {
+    id: 'level_5',
+    name: 'Volcano Database',
+    description: 'Navigate through molten data streams.',
+    theme: LevelTheme.VOLCANO,
+    difficulty: 5,
+    unlocked: false,
+    completed: false,
+    story: 'Bot: "High temperature warnings detected. This volcano is running HOT queries!"',
+    objectives: [
+      {
+        id: 'avoid_lava',
+        description: 'Avoid all lava pits',
+        type: 'avoid_obstacles',
+        target: 10,
+        current: 0,
+        completed: false
+      },
+      {
+        id: 'collect_gems',
+        description: 'Collect 8 fire gems',
+        type: 'collect_items',
+        target: 8,
+        current: 0,
+        completed: false
+      }
+    ],
+    obstacles: [
+      { id: 'lava_1', type: ObstacleType.PITFALL, x: 450, y: 800, width: 150, height: 50, damage: 30 },
+      { id: 'spike_4', type: ObstacleType.SPIKE, x: 750, y: 700, width: 50, height: 50, damage: 18 }
+    ],
+    powerUps: [
+      { id: 'inv_2', type: PowerUpType.INVINCIBILITY, x: 600, y: 680, collected: false, duration: 20, effectValue: 1 }
+    ],
+    backgroundLayers: [
+      'https://picsum.photos/seed/volcano1/1920/1080',
+      'https://picsum.photos/seed/volcano2/1920/1080',
+      'https://picsum.photos/seed/volcano3/1920/1080'
+    ],
+    music: 'volcano_theme'
+  },
+  {
+    id: 'level_6',
+    name: 'Space Station Zero',
+    description: 'The final frontier - defeat the Algorithm King in space!',
+    theme: LevelTheme.SPACE,
+    difficulty: 6,
+    unlocked: false,
+    completed: false,
+    story: 'Black Cat: "This is it. The Algorithm King\'s throne. Let\'s show him what chaos looks like!"',
+    objectives: [
+      {
+        id: 'boss_fight',
+        description: 'Defeat the Algorithm King',
+        type: 'defeat_enemies',
+        target: 1,
+        current: 0,
+        completed: false
+      }
+    ],
+    obstacles: [
+      { id: 'barrier_2', type: ObstacleType.BARRIER, x: 800, y: 600, width: 50, height: 200 },
+      { id: 'moving_spike_3', type: ObstacleType.MOVING_SPIKE, x: 1000, y: 750, width: 50, height: 50, damage: 25, velocity: { x: 3, y: 0 }, pattern: 'horizontal' }
+    ],
+    powerUps: [
+      { id: 'damage_2', type: PowerUpType.DAMAGE_BOOST, x: 900, y: 650, collected: false, duration: 45, effectValue: 3 }
+    ],
+    backgroundLayers: [
+      'https://picsum.photos/seed/space1/1920/1080',
+      'https://picsum.photos/seed/space2/1920/1080',
+      'https://picsum.photos/seed/space3/1920/1080'
+    ],
+    music: 'space_theme'
+  }
+];
+
 // --- Initial State ---
 export const INITIAL_STATE: GameState = {
   screen: GameScreen.INTRO,
@@ -398,5 +732,14 @@ export const INITIAL_STATE: GameState = {
     { id: 'glitch_3', type: 'troll_bot', x: 1100, y: 900 },
     { id: 'glitch_4', type: 'influencer_wraith', x: 1500, y: 650 },
     { id: 'glitch_5', type: 'syntax_error', x: 500, y: 500 },
-  ]
+  ],
+  levels: LEVELS,
+  currentLevel: undefined,
+  achievements: ACHIEVEMENTS,
+  activeEffects: [],
+  customizations: [],
+  audioEnabled: true,
+  musicVolume: 0.5,
+  sfxVolume: 0.7,
+  levelStartTime: undefined
 };
