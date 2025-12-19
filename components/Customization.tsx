@@ -50,9 +50,15 @@ export const Customization: React.FC<Props> = ({ gameState, onSaveCustomization,
     onClose();
   };
 
-  const currentCustomization = selectedEntity === 'player' ? playerCustomization : companionCustomization;
-  const setCurrentCustomization = selectedEntity === 'player' ? setPlayerCustomization : setCompanionCustomization;
-  const outfits = selectedEntity === 'player' ? OUTFITS.PLAYER : OUTFITS.COMPANION;
+  // Validate selectedEntity and ensure companion exists when selected
+  // Fall back to 'player' if companion is selected but doesn't exist in gameState
+  const safeSelectedEntity = (selectedEntity === 'companion' && !gameState.companion) 
+    ? 'player' 
+    : selectedEntity;
+  
+  const currentCustomization = safeSelectedEntity === 'player' ? playerCustomization : companionCustomization;
+  const setCurrentCustomization = safeSelectedEntity === 'player' ? setPlayerCustomization : setCompanionCustomization;
+  const outfits = safeSelectedEntity === 'player' ? OUTFITS.PLAYER : OUTFITS.COMPANION;
 
   return (
     <div className="h-full flex flex-col bg-black text-white p-8 overflow-y-auto">
@@ -101,14 +107,14 @@ export const Customization: React.FC<Props> = ({ gameState, onSaveCustomization,
             }}
           >
             <img 
-              src={selectedEntity === 'player' ? gameState.player.avatar : gameState.companion?.avatar}
+              src={safeSelectedEntity === 'player' ? gameState.player.avatar : gameState.companion?.avatar || ''}
               alt="Character Preview"
               className="w-full h-full rounded object-cover"
-              style={{ filter: `hue-rotate(${COLORS.findIndex(c => c.value === currentCustomization.color) * 45}deg)` }}
+              style={{ filter: `hue-rotate(${getHueRotationDegrees(currentCustomization.color)}deg)` }}
             />
           </div>
           <div className="text-xl font-bold mb-1" style={{ color: currentCustomization.color }}>
-            {selectedEntity === 'player' ? gameState.player.name : gameState.companion?.name}
+            {safeSelectedEntity === 'player' ? gameState.player.name : gameState.companion?.name || 'Companion'}
           </div>
           <div className="text-sm text-gray-400">{currentCustomization.outfit.replace('_', ' ').toUpperCase()}</div>
         </div>
@@ -182,3 +188,10 @@ export const Customization: React.FC<Props> = ({ gameState, onSaveCustomization,
     </div>
   );
 };
+
+// Helper function to safely calculate hue rotation degrees
+function getHueRotationDegrees(color: string): number {
+  const colorIndex = COLORS.findIndex(c => c.value === color);
+  // Return 0 degrees if color not found in COLORS array (prevents negative values)
+  return colorIndex >= 0 ? colorIndex * 45 : 0;
+}
