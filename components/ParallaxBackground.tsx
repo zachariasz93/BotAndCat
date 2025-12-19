@@ -27,17 +27,17 @@ export const ParallaxBackground: React.FC<Props> = ({ theme, layers, scrollX, sc
   // Get theme-specific gradient overlay
   const getThemeGradient = (theme: LevelTheme) => {
     switch(theme) {
-      case 'CYBER_CITY':
+      case LevelTheme.CYBER_CITY:
         return 'linear-gradient(to bottom, rgba(0,0,139,0.3), rgba(75,0,130,0.3))';
-      case 'FOREST':
+      case LevelTheme.FOREST:
         return 'linear-gradient(to bottom, rgba(34,139,34,0.3), rgba(0,100,0,0.3))';
-      case 'DESERT':
+      case LevelTheme.DESERT:
         return 'linear-gradient(to bottom, rgba(255,165,0,0.2), rgba(255,140,0,0.2))';
-      case 'ARCTIC':
+      case LevelTheme.ARCTIC:
         return 'linear-gradient(to bottom, rgba(0,191,255,0.2), rgba(135,206,250,0.2))';
-      case 'VOLCANO':
+      case LevelTheme.VOLCANO:
         return 'linear-gradient(to bottom, rgba(178,34,34,0.3), rgba(255,69,0,0.3))';
-      case 'SPACE':
+      case LevelTheme.SPACE:
         return 'linear-gradient(to bottom, rgba(25,25,112,0.5), rgba(0,0,0,0.8))';
       default:
         return 'linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.3))';

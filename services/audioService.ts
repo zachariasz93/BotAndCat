@@ -27,6 +27,9 @@ class AudioService {
   playMusic(track: string) {
     if (!this.config.enabled) return;
     
+    // Stop any currently playing music
+    this.stopMusic();
+    
     // In a real implementation, you would load and play the actual music file
     // For now, we'll just track what should be playing
     this.currentMusic = track;

@@ -487,13 +487,16 @@ export default function App() {
       value
     };
 
-    setGameState(prev => ({
-      ...prev,
-      activeEffects: [...prev.activeEffects, newEffect]
-    }));
-
-    // Update achievement
     setGameState(prev => {
+      // Mark the power-up as collected in the current level
+      const updatedLevel = prev.currentLevel ? {
+        ...prev.currentLevel,
+        powerUps: prev.currentLevel.powerUps.map(p => 
+          p.type === powerUpType && !p.collected ? { ...p, collected: true } : p
+        )
+      } : prev.currentLevel;
+
+      // Update achievement
       const achievements = [...prev.achievements];
       const collectorAch = achievements.find(a => a.id === 'collector');
       if (collectorAch && !collectorAch.unlocked) {
@@ -503,7 +506,13 @@ export default function App() {
           audioService.playSFX(SFX.ACHIEVEMENT);
         }
       }
-      return { ...prev, achievements };
+
+      return {
+        ...prev,
+        activeEffects: [...prev.activeEffects, newEffect],
+        currentLevel: updatedLevel,
+        achievements
+      };
     });
   };
 

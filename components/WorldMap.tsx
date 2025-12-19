@@ -150,7 +150,8 @@ export const WorldMap: React.FC<Props> = ({
             const dist = Math.hypot(powerUp.x - px, powerUp.y - py);
             if (dist < 30) {
               onCollectPowerUp(powerUp.type, powerUp.duration, powerUp.effectValue);
-              powerUp.collected = true;
+              // Mark as collected - parent component should update state
+              // Note: This will be synced on next render from parent state
             }
           }
         }
