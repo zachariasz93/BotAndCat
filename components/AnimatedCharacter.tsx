@@ -11,6 +11,11 @@ export const AnimatedCharacter: React.FC<Props> = ({ entity, size = 48, showLeve
   const [frame, setFrame] = useState(0);
   const animState = entity.animationState || AnimationState.IDLE;
 
+  // Validate animation state is a valid enum value
+  const validAnimState = Object.values(AnimationState).includes(animState) 
+    ? animState 
+    : AnimationState.IDLE;
+
   // Simple frame animation
   useEffect(() => {
     const interval = setInterval(() => {
@@ -21,7 +26,7 @@ export const AnimatedCharacter: React.FC<Props> = ({ entity, size = 48, showLeve
 
   // Animation effects based on state
   const getAnimationClass = () => {
-    switch(animState) {
+    switch(validAnimState) {
       case AnimationState.RUNNING:
         return 'animate-bounce';
       case AnimationState.JUMPING:
@@ -38,7 +43,7 @@ export const AnimatedCharacter: React.FC<Props> = ({ entity, size = 48, showLeve
 
   // Color tint based on animation state
   const getFilterClass = () => {
-    switch(animState) {
+    switch(validAnimState) {
       case AnimationState.DAMAGED:
         return 'brightness-150 hue-rotate-[340deg]'; // Red tint
       case AnimationState.ATTACKING:
@@ -115,6 +120,14 @@ export const AnimatedCharacter: React.FC<Props> = ({ entity, size = 48, showLeve
 
 // Helper to get hue rotation for color tinting
 function getHueRotation(hexColor: string): number {
+  // Validate hex color format
+  if (!hexColor || typeof hexColor !== 'string') {
+    return 0;
+  }
+  
+  // Normalize color to lowercase for comparison
+  const normalizedColor = hexColor.toLowerCase();
+  
   // Simple mapping of common colors to hue degrees
   const colorMap: Record<string, number> = {
     '#ffffff': 0,      // white - no rotation
@@ -127,5 +140,6 @@ function getHueRotation(hexColor: string): number {
     '#c0c0c0': 0,      // silver
   };
   
-  return colorMap[hexColor.toLowerCase()] || 0;
+  // Return mapped value or 0 for unknown colors
+  return colorMap[normalizedColor] ?? 0;
 }

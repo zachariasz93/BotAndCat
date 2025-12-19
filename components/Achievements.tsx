@@ -16,8 +16,13 @@ export const Achievements: React.FC<Props> = ({ gameState, onClose }) => {
 
   const getIcon = (iconName?: string) => {
     if (!iconName) return Trophy;
+    // Validate icon exists in lucide-react exports
     const IconComponent = (Icons as any)[iconName];
-    return IconComponent || Trophy;
+    // Fallback to Trophy if icon name is invalid or not found
+    if (!IconComponent || typeof IconComponent !== 'function') {
+      return Trophy;
+    }
+    return IconComponent;
   };
 
   return (
